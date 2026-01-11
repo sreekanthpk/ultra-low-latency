@@ -53,9 +53,6 @@ public final class FixServer {
         key.clear().append("GOOG"); value.clear().append("Alphabet"); symbolMap.put(key, value);
         key.clear().append("MSFT"); value.clear().append("Microsoft"); symbolMap.put(key, value);*/
 
-
-
-
         // Start TCP server to accept clients
         new Thread(() -> runTcpServer(5000)).start();
 

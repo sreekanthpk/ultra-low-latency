@@ -104,7 +104,7 @@ Adjust these constants in `FixServer` or externalize via environment variables o
 Apache License, Version 2.0 (Apache-2.0)
 
 ## Profiling with Java Mission Control
-Zero Colelction for 30 minutes run time. Uses ZGC
+Zero Collection for 30 minutes run time. Uses ZGC
 
 <img width="1918" height="1036" alt="image" src="https://github.com/user-attachments/assets/3df80af4-d7c5-4ad1-a00d-3683fe020c1c" />
 

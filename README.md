@@ -6,6 +6,7 @@ A lightweight Java server that receives market ticks via Aeron,  generates FIX m
 \- Aeron subscriber for low\-latency market ticks  
 \- Disruptor ring buffer for efficient event processing
 \- Simple non\-blocking TCP server to stream FIX messages to clients
+\- Zero Garbagae collection and new allocation
 
 ## Prerequisites
 \- Java 21\+ (or the JDK version used by the project)  

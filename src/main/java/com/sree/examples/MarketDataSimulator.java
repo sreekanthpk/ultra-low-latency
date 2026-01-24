@@ -1,5 +1,6 @@
 package com.sree.examples;
 
+import com.sree.examples.model.Tick;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import org.agrona.DirectBuffer;
@@ -21,18 +22,31 @@ public final class MarketDataSimulator {
         }
 
         Tick tick = new Tick();
-        ByteBuffer buffer = ByteBuffer.allocateDirect(256);
-        DirectBuffer dBuffer= new UnsafeBuffer(buffer);
+        // Allocate once (important for latency)
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
+        UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
 
         while (true) {
             for (byte[] sym : symbolBytes) {
-                tick.set(sym, Math.random() * 500, (int)(Math.random() * 100));
-                buffer.clear();
-                buffer.put(sym);
-                buffer.putDouble(tick.getPrice());
-                buffer.putInt(tick.getSize());
-                buffer.flip();
-                while (publication.offer(dBuffer) < 0L) {
+
+                tick.set(sym, Math.random() * 500, (int) (Math.random() * 100));
+
+                int offset = 0;
+
+                // symbol (assume fixed length, e.g. 8 bytes)
+                buffer.putBytes(offset, sym);
+                offset += sym.length;
+
+                // price
+                buffer.putDouble(offset, tick.getPrice());
+                offset += Double.BYTES;
+
+                // size
+                buffer.putInt(offset, tick.getSize());
+                offset += Integer.BYTES;
+
+                // publish
+                while (publication.offer(buffer, 0, offset) < 0) {
                     Thread.yield();
                 }
             }

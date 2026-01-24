@@ -1,5 +1,7 @@
 package com.sree.examples;
 
+import com.sree.examples.model.Tick;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 

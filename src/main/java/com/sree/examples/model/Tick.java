@@ -1,4 +1,4 @@
-package com.sree.examples;
+package com.sree.examples.model;
 
 public final class Tick {
     private final byte[] symbol = new byte[4]; // fixed-length symbol

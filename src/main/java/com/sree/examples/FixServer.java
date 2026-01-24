@@ -1,5 +1,7 @@
 package com.sree.examples;
 
+import com.sree.examples.model.Tick;
+import com.sree.examples.qucikfix4j.QFJFixAcceptor;
 import io.aeron.Aeron;
 import io.aeron.Subscription;
 import io.aeron.driver.ThreadingMode;
@@ -11,23 +13,15 @@ import com.lmax.disruptor.*;
 import com.lmax.disruptor.dsl.ProducerType;
 
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.*;
-
-import java.util.Iterator;
 
 import java.util.concurrent.Executors;
 
 public final class FixServer {
 
-    private static SocketChannel client;
-
-    public static byte[] instrumentNameBuffer = new byte[4];
 
     public static void main(String[] args)  {
-
+        final FixAcceptor fixAcceptor = FixEngineFactory.getFixAcceptor();
         MediaDriver.Context ctx = new MediaDriver.Context()
                 .dirDeleteOnStart(true)
                 .warnIfDirectoryExists(true)
@@ -54,7 +48,7 @@ public final class FixServer {
         key.clear().append("MSFT"); value.clear().append("Microsoft"); symbolMap.put(key, value);*/
 
         // Start TCP server to accept clients
-        new Thread(() -> runTcpServer(5000)).start();
+        fixAcceptor.start();
 
         // Disruptor for processing ticks
         RingBuffer<TickEvent> ringBuffer = RingBuffer.create(
@@ -66,9 +60,7 @@ public final class FixServer {
 
         EventHandler<TickEvent> handler = (event, sequence, endOfBatch) -> {
             Tick tick = event.getTick();
-            ByteBuffer buffer = FixMessageGenerator.getBuffer();
-            FixMessageGenerator.writeFixMessage(tick, null , buffer);
-            sendToClients(buffer);
+            fixAcceptor.sendIOI(tick, null);
         };
 
         BatchEventProcessor<TickEvent> processor =
@@ -104,47 +96,5 @@ public final class FixServer {
             int fragments = subscription.poll(fragmentHandler, 10);
             if (fragments == 0) idleStrategy.idle(0);
         }
-    }
-
-    private static void runTcpServer(int port) {
-        try (ServerSocketChannel serverChannel = ServerSocketChannel.open()) {
-            serverChannel.bind(new InetSocketAddress(port));
-            serverChannel.configureBlocking(false);
-            Selector selector = Selector.open();
-            serverChannel.register(selector, SelectionKey.OP_ACCEPT);
-            System.out.println("TCP server started on port " + port);
-
-            while (true) {
-                selector.select(10);
-                Iterator<SelectionKey> keys = selector.selectedKeys().iterator();
-                while (keys.hasNext()) {
-                    SelectionKey key = keys.next();
-                    keys.remove();
-
-                    if (key.isAcceptable()) {
-                        client = serverChannel.accept();
-                        client.configureBlocking(false);
-
-                        System.out.println("Client connected: " + client.getRemoteAddress());
-                    }
-                }
-            }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    private static void sendToClients(ByteBuffer message) {
-        if(null== client) return;
-        // Reset position for each client without duplicating the object
-        message.position(0);
-        while(message.hasRemaining()) {
-            try {
-                client.write(message);
-            } catch (IOException e) {
-                System.out.println("Error writing to client: " + e.getMessage());
-            }
-        }
-
     }
 }
